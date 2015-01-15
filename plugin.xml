@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<!-- plugin.xml file written by dynaTrace Client 5.5.0 -->
+<plugin>
+  <extension point="com.dynatrace.diagnostics.pdk.pluginconfig" id="com.eventLogMonitor" name="Windows Event Log Monitor">
+    <information>
+      <category value="" />
+      <displayname value="Windows Event Log Monitor" />
+      <description value="This plug-in will alert when a new Windows Event Log Message is found." />
+      <supportlevel value="unsupported" />
+    </information>
+    <configuration>
+      <property key="EventLog" label="Event Log" type="string" description="The event log to search." default="" multiline="false" />
+      <property key="SearchTerm" label="Search Term" type="string" description="The search term obtained from the XML in windows event log." default="" multiline="false" />
+      <property key="SQLServer" label="SQL Server" type="string" description="The SQL Server to use for storage" default="" multiline="false" />
+      <property key="SQLUser" label="SQL Username" type="string" description="The SQL Username to use for connection to the database." default="" multiline="false" />
+      <property key="SQLPassword" label="SQL Password" type="password" description="The password for the SQL Username used to connect to the database." default="" />
+    </configuration>
+  </extension>
+  <extension point="com.dynatrace.diagnostics.pdk.monitor" id="com.eventLogMonitor.eventMonitor" name="Windows Event Log Monitor">
+    <plugin configid="com.eventLogMonitor" class="com.eventLogMonitor.EventMonitor" />
+  </extension>
+  <extension point="com.dynatrace.diagnostics.pdk.monitormetricgroup" id="com.eventLogMonitor.eventMonitor.metricgroup1" name="Windows Event Log Monitor">
+    <metricgroup monitorid="com.eventLogMonitor.eventMonitor">
+      <metric defaultrate="purepath" name="New Message" unit="number" description="If a new event log message is found this number will be 1, otherwise it will be 0." />
+    </metricgroup>
+  </extension>
+</plugin>
+
