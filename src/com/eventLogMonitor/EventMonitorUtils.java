@@ -10,6 +10,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -25,6 +26,7 @@ import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
+import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
@@ -43,7 +45,7 @@ public class EventMonitorUtils {
 	public EventMonitorUtils(){
 	}
 	public static String executeWevtutilQuery(String logFile, String searchTerm, String server) {
-		String command = "wevtutil qe " + logFile + " /q:\"" + searchTerm + "\" /r:" + server;
+		String command = "wevtutil qe \"" + logFile + "\" /q:\"" + searchTerm + "\" /r:" + server;
 		log.fine(command);
 		String inputStream = "<Events>";
 		String line = "";
@@ -64,10 +66,12 @@ public class EventMonitorUtils {
 			log.log(Level.SEVERE, "Error occured while obtaining raw event data: ", t);
 			return null;
 		}
+		log.fine(inputStream);
 		return (inputStream);
 	}
-	public static String calculateNewEvents(String inputStream, String searchTerm,String connectionURL,String server,String logFile,String originalSearchTerm) {
+	public static String[] calculateNewEvents(String inputStream, String searchTerm,String connectionURL,String server,String logFile,String originalSearchTerm, Properties mailprops) {
 		Transformer transformer;
+		int numEvents=0;
 		try {
 			boolean newRecord = false;
 			transformer = TransformerFactory.newInstance().newTransformer();
@@ -83,7 +87,7 @@ public class EventMonitorUtils {
 			Document document = builder.parse( new InputSource( new StringReader(xmlString) ) );
 			document.getDocumentElement().normalize();
 			NodeList eventList = document.getElementsByTagName("Event");
-			int numEvents = eventList.getLength();
+			numEvents = eventList.getLength();
 			String EventData = "";
 			String EventDataTemp = "";
 			String EventID = "";
@@ -143,6 +147,10 @@ public class EventMonitorUtils {
 				log.fine(EventData);
 				EventData += "<hr>[EventID: " + EventID + " | EventSource: " + EventSource + " | Event #" + EventRecordID + " | Source Time:" + EventTime + " GMT] - " + EventDataTemp;
 				log.fine("**************************************************************************");
+				
+				String mailhost=mailprops.getProperty("host");
+				if ((mailhost!=null) && (!mailhost.equals("")))
+					EventMonitorActions.sendMail(mailprops.getProperty("from"),mailprops.getProperty("to"),mailprops.getProperty("host"),mailprops.getProperty("subject"),nodeToString(event));
 			}
 			if(newRecord)
 			{
@@ -153,7 +161,7 @@ public class EventMonitorUtils {
 				boolean updateCheck = EventMonitorUtils.updateDatabase(connectionURL,server,logFile,originalSearchTerm,searchTerm,EventData);
 				if(updateCheck)
 				{
-					return (searchTerm);
+					return (new String[]{searchTerm,""+numEvents});
 				}
 				else
 				{
@@ -162,7 +170,7 @@ public class EventMonitorUtils {
 					if(updateCheck)
 					{
 						log.severe("Database update Attempt 2 Succeed");
-						return (searchTerm);
+						return (new String[]{searchTerm,""+numEvents});
 					}
 					else
 					{
@@ -171,12 +179,12 @@ public class EventMonitorUtils {
 						if(updateCheck)
 						{
 							log.severe("Database update Attempt 3 Succeed");
-							return (searchTerm);
+							return (new String[]{searchTerm,""+numEvents});
 						}
 						else
 						{
 							log.severe("Database update Attempt 3 failed.  The monitor will throw an error.  Please rerun this monitor.");
-							return null;
+							return (new String[]{null,"0"});
 						}
 					}
 				}
@@ -200,7 +208,7 @@ public class EventMonitorUtils {
 			log.log(Level.SEVERE, "Error occured while Processing raw event data: ", e);
 			return null;
 		}
-		return (searchTerm);
+		return (new String[]{searchTerm,""+numEvents});
 	}
 	public static String getCurrentSearchTerm(String connectionURL,	String server, String logFile, String originalSearchTerm) {
 		try {
@@ -271,4 +279,19 @@ public class EventMonitorUtils {
 			return false;
 		}
 	}
+
+
+private static String nodeToString(Node node) {
+  StringWriter sw = new StringWriter();
+  try {
+    Transformer t = TransformerFactory.newInstance().newTransformer();
+    t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+    t.transform(new DOMSource(node), new StreamResult(sw));
+  } catch (TransformerException te) {
+    System.out.println("nodeToString Transformer Exception");
+  }
+  return sw.toString();
+}
+
+
 }

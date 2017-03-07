@@ -1,6 +1,7 @@
 package com.eventLogMonitor;
 
 import java.util.Collection;
+import java.util.Properties;
 
 import com.dynatrace.diagnostics.pdk.*;
 
@@ -14,6 +15,12 @@ public class EventMonitor implements Monitor {
 	private static final String METRIC_GROUP = "Windows Event Log Monitor";
 	private static final String MSR_MSG = "New Message";
 
+	private static final String CONFIG_MAIL_FROM = "MailFrom";
+	private static final String CONFIG_MAIL_TO = "MailTo";
+	private static final String CONFIG_MAIL_HOST = "MailHost";
+	private static final String CONFIG_MAIL_SUBJECT = "MailSubject";
+	
+	
 	private String logFile = "";
 	private String searchTerm = "";
 	private String sqlServer = "";
@@ -23,6 +30,7 @@ public class EventMonitor implements Monitor {
 	private String connectionURL = "";
 	private String originalSearchTerm = "";
 	private boolean newRecord = false;
+	private Properties mailprops=new Properties();
 
 	@Override
 	public Status setup(MonitorEnvironment env) throws Exception {
@@ -41,6 +49,11 @@ public class EventMonitor implements Monitor {
 				+ ";password=" + sqlPass + ";";
 		searchTerm = EventMonitorUtils.getCurrentSearchTerm(connectionURL,server,logFile,originalSearchTerm);
 		
+		mailprops.setProperty("from", env.getConfigString(CONFIG_MAIL_FROM));
+		mailprops.setProperty("to", env.getConfigString(CONFIG_MAIL_TO));
+		mailprops.setProperty("host", env.getConfigString(CONFIG_MAIL_HOST));
+		mailprops.setProperty("subject", env.getConfigString(CONFIG_MAIL_SUBJECT));
+		
 		return result;
 	}
 
@@ -57,7 +70,9 @@ public class EventMonitor implements Monitor {
 			result.setMessage("An error has occured while executing wevtutil.  Please check the logs for more information.");
 			return result;
 		}
-		String searchTerm2 = EventMonitorUtils.calculateNewEvents(wevtutilResult,searchTerm, connectionURL,server,logFile,originalSearchTerm);
+		
+		String[] searchEvents = EventMonitorUtils.calculateNewEvents(wevtutilResult,searchTerm, connectionURL,server,logFile,originalSearchTerm,mailprops);
+		String searchTerm2=searchEvents[0];
 		if(searchTerm2 == null)
 		{
 			searchTerm = EventMonitorUtils.getCurrentSearchTerm(connectionURL,server,logFile,originalSearchTerm);
@@ -68,14 +83,14 @@ public class EventMonitor implements Monitor {
 		else if(!searchTerm2.equals(searchTerm))
 		{
 			newRecord = true;
-			result = new Status(Status.StatusCode.PartialSuccess);
+			// result = new Status(Status.StatusCode.PartialSuccess);
 			result.setMessage("New Message Found:\n" + wevtutilResult);
 			searchTerm = searchTerm2;
 		}
 		Collection<MonitorMeasure> measures;
 	 	if ((measures = env.getMonitorMeasures(METRIC_GROUP, MSR_MSG)) != null) {
 	 	for (MonitorMeasure measure : measures)
-	 		measure.setValue(newRecord ? 1 : 0);
+	 		measure.setValue(newRecord ? new Integer(searchEvents[1]).intValue() : 0);
 	 	}
 		return result;
 	}

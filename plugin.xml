@@ -15,6 +15,10 @@
       <property key="SQLServer" label="SQL Server" type="string" description="The SQL Server to use for storage" default="" multiline="false" />
       <property key="SQLUser" label="SQL Username" type="string" description="The SQL Username to use for connection to the database." default="" multiline="false" />
       <property key="SQLPassword" label="SQL Password" type="password" description="The password for the SQL Username used to connect to the database." default="" />
+      <property key="MailFrom" label="Mail From" type="string" description="The user who sends the log events out by mail." default="" />
+      <property key="MailTo" label="Mail To" type="string" description="The user who receives the log events by mail." default="" />
+      <property key="MailHost" label="Mail Host" type="string" description="The smtp host to send mails. (leave empty if you don't wish to send mails)" default="" />
+      <property key="MailSubject" label="Mail Subject" type="string" description="The mail subject." default="" />
     </configuration>
   </extension>
   <extension point="com.dynatrace.diagnostics.pdk.monitor" id="com.eventLogMonitor.eventMonitor" name="Windows Event Log Monitor">
@@ -22,7 +26,7 @@
   </extension>
   <extension point="com.dynatrace.diagnostics.pdk.monitormetricgroup" id="com.eventLogMonitor.eventMonitor.metricgroup1" name="Windows Event Log Monitor">
     <metricgroup monitorid="com.eventLogMonitor.eventMonitor">
-      <metric defaultrate="purepath" name="New Message" unit="number" description="If a new event log message is found this number will be 1, otherwise it will be 0." />
+      <metric defaultrate="purepath" name="New Message" unit="number" description="If a new event log message is found this number will return the count, otherwise it will be 0." />
     </metricgroup>
   </extension>
 </plugin>
