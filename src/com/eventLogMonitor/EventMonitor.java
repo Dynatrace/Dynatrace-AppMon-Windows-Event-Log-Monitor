@@ -10,6 +10,9 @@ public class EventMonitor implements Monitor {
 	private static final String CONFIG_EVENT_LOG = "EventLog";
 	private static final String CONFIG_SEARCH_TERM = "SearchTerm";
 	private static final String CONFIG_SQL_SERVER = "SQLServer";
+
+	private static final String CONFIG_SQL_DATABASE = "SQLDatabase";
+	private static final String CONFIG_SQL_PORT = "SQLPort";
 	private static final String CONFIG_SQL_USER = "SQLUser";
 	private static final String CONFIG_SQL_PASS = "SQLPassword";
 	private static final String METRIC_GROUP = "Windows Event Log Monitor";
@@ -24,8 +27,10 @@ public class EventMonitor implements Monitor {
 	private String logFile = "";
 	private String searchTerm = "";
 	private String sqlServer = "";
+	private String sqlDatabase = "";
 	private String sqlUser = "";
 	private String sqlPass = "";
+	private String sqlPort = "";
 	private String server = "";
 	private String connectionURL = "";
 	private String originalSearchTerm = "";
@@ -41,11 +46,13 @@ public class EventMonitor implements Monitor {
 		originalSearchTerm = env.getConfigString(CONFIG_SEARCH_TERM);
 		logFile = env.getConfigString(CONFIG_EVENT_LOG);
 		sqlServer = env.getConfigString(CONFIG_SQL_SERVER);
+		sqlDatabase = env.getConfigString(CONFIG_SQL_DATABASE);
 		sqlUser = env.getConfigString(CONFIG_SQL_USER);
 		sqlPass = env.getConfigPassword(CONFIG_SQL_PASS);
+		sqlPort = env.getConfigString(CONFIG_SQL_PORT);
 		server = env.getHost().getAddress();
-		connectionURL = "jdbc:sqlserver://" + sqlServer + ":1433;"
-				+ "databaseName=dynaTracePluginDB;username=" + sqlUser
+		connectionURL = "jdbc:sqlserver://" + sqlServer + ":" + sqlPort
+				+ ";databaseName=" + sqlDatabase + ";username=" + sqlUser
 				+ ";password=" + sqlPass + ";";
 		searchTerm = EventMonitorUtils.getCurrentSearchTerm(connectionURL,server,logFile,originalSearchTerm);
 		
